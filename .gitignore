@@ -132,3 +132,7 @@ data/OpenEDGeS
 data/processed
 
 **/.DS_Store
+data/eval/de-de/de_1781_Rosalino-de_1871_Elberfelder/text.l
+data/eval/de-en/de_1871_Elberfelder-en_1890_Darby/text.l
+data/eval/en-en/en_1611_KJV-en_1890_Darby/text.l
+annotation.py
