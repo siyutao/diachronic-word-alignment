@@ -1,0 +1,14 @@
+Standard IBM Model 1, DE-DE
+Precision = 0.527919
+Recall = 0.634146
+AER = 0.423823
+
+Model 1 with ED Heuristic, DE-DE
+Precision = 0.563452
+Recall = 0.676829
+AER = 0.385042
+
+Model 1 with ED Decoding, DE-DE
+Precision = 0.543147
+Recall = 0.652439
+AER = 0.407202
