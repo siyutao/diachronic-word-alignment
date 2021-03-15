@@ -29,6 +29,12 @@ class ED_Model1:
         self.e_vocab = list(set([word for sentence in self.e_text for word in sentence]))
         self.f_vocab_size = len(self.f_vocab)
         self.e_vocab_size = len(self.e_vocab)
+        self.f_to_index = {}
+        self.e_to_index = {}
+        for i, f_word in enumerate(self.f_vocab):
+            self.f_to_index[f_word] = i
+        for j, e_word in enumerate(self.e_vocab):
+            self.e_to_index[e_word] = j
         print("f_vocab_size:", self.f_vocab_size)
         print("e_vocab_size:", self.e_vocab_size)
         self.prob = defaultdict(float)
@@ -48,30 +54,22 @@ class ED_Model1:
                 print('.', end='')
         print()
         # divide each row by its sum
-        self.heuristic_p = {}
         ed_array = ed_array/ed_array.sum(axis=1, keepdims=True)
-        for i, f_word in enumerate(self.f_vocab):
-            for j, e_word in enumerate(self.e_vocab):
-                self.heuristic_p[(f_word, e_word)] = ed_array[i,j]
+        self.heuristic_p = ed_array
         print("Heuristic initialization completed.")
         return None
-
+    
     def em_training(self, num_iter = 5, mu=0, sig=2):
         '''
-        function implementing EM algorithm
-        num_iter - number of EM iterations (default=5)
-        Reference: p.6 Adam Lopez, "Word Alignment and the Expectation-Maximization Algorithm"
+        function implementing EM algorithm (edited to use numpy array)
         '''
-        
-        p = defaultdict(lambda: defaultdict(float))
-        
+        p = [np.empty(shape=(self.f_vocab_size, self.e_vocab_size))] * (num_iter + 1)
         if self.ed_heuristic:
             self.ed_heuristic_initialization(mu=0, sig=2)
             p[0] = self.heuristic_p
         else:
-            # initialize theta[0] uniformly, i.e. p(f|e): p[0][(f,e)]= 1/f_vocab
-            p[0] = defaultdict(lambda: 1/self.f_vocab_size)
-
+            p[0] = np.ones(shape=(self.f_vocab_size, self.e_vocab_size))
+            p[0] = p[0]/p[0].sum(axis=1, keepdims=True)
         print("EM Training Starting:")
         for k in range(1, num_iter + 1): # iterate for num_iter times
             print('Iteration {0:1}...'.format(k))
@@ -82,17 +80,22 @@ class ED_Model1:
             for f, e in zip(self.f_text, self.e_text): # iterate over sentence pairs
                 for f_i in f:
                     Z = 0
+                    i = self.f_to_index[f_i]
                     for e_j in e:
-                        Z += p[k-1][(f_i,e_j)]
+                        j = self.e_to_index[e_j]
+                        Z += p[k-1][i,j]
                     for e_j in e:
-                        c = p[k-1][(f_i,e_j)] / Z # expected count
+                        j = self.e_to_index[e_j]
+                        c = p[k-1][i,j] / Z # expected count
                         fe_count[(f_i,e_j)] += c # increase count of alignment
                         e_count[e_j] += c # increase count of English
             # M-Step
             for f, e in fe_count.keys():
-                p[k][(f,e)] = fe_count[(f,e)]/e_count[e]
+                i = self.f_to_index[f]
+                j = self.e_to_index[e]
+                p[k][i,j] = fe_count[(f,e)]/e_count[e]
         self.prob = p[k]
-    
+
     def align(self, out = "./output.a", n = 10):
         '''
         align function implementing most probable alignment
@@ -108,10 +111,14 @@ class ED_Model1:
                     if self.ed_decode:
                         # when using edit distance
                         ed = editdistance.eval(f_i,e_j) + 1
-                        prob_prime = self.prob[(f_i,e_j)] / ed
+                        index_i = self.f_to_index[f_i]
+                        index_j = self.e_to_index[e_j]
+                        prob_prime = self.prob[index_i,index_j] / ed
                     else:
                         # default
-                        prob_prime = self.prob[(f_i,e_j)]
+                        index_i = self.f_to_index[f_i]
+                        index_j = self.e_to_index[e_j]
+                        prob_prime = self.prob[index_i,index_j]
                     if prob_prime > best_prob:
                         best_prob = prob_prime
                         best_j = j
