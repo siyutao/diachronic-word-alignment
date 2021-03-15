@@ -4,7 +4,7 @@ from collections import defaultdict
 
 class Model1:
 
-    def __init__(self, d = "data/hansards", e = "e", f = "f", n = 100000000000, null_padding = False):
+    def __init__(self, d = "data/eval/de-de/de_1781_Rosalino-de_1871_Elberfelder/text", e = "e", f = "f", n = 100000000000, null_padding = False):
         '''
         d - Data filename prefix (default=data)
         e - Suffix of English filename (default=e)
@@ -27,10 +27,10 @@ class Model1:
         print("e_vocab_size:", self.e_vocab_size)
         self.prob = defaultdict(float)
 
-    def em_training(self, num_iter = 3):
+    def em_training(self, num_iter = 5):
         '''
         function implementing EM algorithm
-        num_iter - number of EM iterations (default=3)
+        num_iter - number of EM iterations (default=5)
         Reference: p.6 Adam Lopez, "Word Alignment and the Expectation-Maximization Algorithm"
         '''
         
@@ -39,7 +39,9 @@ class Model1:
         # initialize theta[0] uniformly, i.e. p(f|e): p[0][(f,e)]= 1/f_vocab
         p[0] = defaultdict(lambda: 1/self.f_vocab_size)
 
+        print("EM Training Starting:")
         for k in range(1, num_iter + 1): # iterate for num_iter times
+            print('Iteration {0:1}...'.format(k))
             # init all counts to 0.0
             e_count = defaultdict(float)
             fe_count = defaultdict(float)
@@ -58,7 +60,7 @@ class Model1:
                 p[k][(f,e)] = fe_count[(f,e)]/e_count[e]
         self.prob = p[k]
     
-    def align(self, out = "./output.a", n = 37):
+    def align(self, out = "./output.a", n = 10):
         '''
         align function implementing most probable alignment
         out - output file path
@@ -80,3 +82,5 @@ class Model1:
                     output.write("%i-%i " % (i,best_j))
             output.write("\n")
         output.close()
+        print("Aligned {0} sentences.".format(n))
+        print("Output to:", out)
